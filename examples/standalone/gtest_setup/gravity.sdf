@@ -26,7 +26,6 @@
             </sphere>
           </geometry>
         </collision>
-
       </link>
     </model>
   </world>

@@ -38,33 +38,32 @@ TEST(ExampleTests, Gravity)
   // This callback is called every simulation iteration
   int iterations{0};
 
-  ignition::gazebo::Entity worldEntity;
   ignition::gazebo::Entity modelEntity;
+  ignition::math::Vector3d gravity;
 
   fixture.
+  // Use configure callback to get values at startup
   OnConfigure(
-    [&worldEntity, &modelEntity](const ignition::gazebo::Entity &_entity,
-      const std::shared_ptr<const sdf::Element> &_sdf,
+    [&modelEntity, &gravity](const ignition::gazebo::Entity &_worldEntity,
+      const std::shared_ptr<const sdf::Element> &/*_sdf*/,
       ignition::gazebo::EntityComponentManager &_ecm,
-      ignition::gazebo::EventManager &_eventMgr)
+      ignition::gazebo::EventManager &/*_eventMgr*/)
     {
-      worldEntity = ignition::gazebo::worldEntity(_ecm);
-      ignition::gazebo::World world(worldEntity);
+      // Get gravity
+      ignition::gazebo::World world(_worldEntity);
+      gravity = world.Gravity(_ecm).value();
 
+      // Get sphere entity
       modelEntity = world.ModelByName(_ecm, "sphere");
       EXPECT_NE(ignition::gazebo::kNullEntity, modelEntity);
     }).
+  // Use post-update callback to get values at the end of every iteration
   OnPostUpdate(
-    [&iterations, &worldEntity, &modelEntity](
+    [&iterations, &modelEntity, &gravity](
       const ignition::gazebo::UpdateInfo &_info,
       const ignition::gazebo::EntityComponentManager &_ecm)
     {
-      ignition::gazebo::World world(worldEntity);
-      auto gravity = world.Gravity(_ecm).value();
-
       // Inspect all model poses
-      ignition::gazebo::Model model(modelEntity);
-
       auto pose = ignition::gazebo::worldPose(modelEntity, _ecm);
 
       EXPECT_DOUBLE_EQ(0.0, pose.Pos().X());
@@ -76,9 +75,12 @@ TEST(ExampleTests, Gravity)
       EXPECT_NEAR(gravity.Z() * time * time * 0.5, pose.Pos().Z(), 1e-2);
 
       iterations++;
-    }).Finalize();
+    }).
+  // The moment we finalize, the configure callback is called
+  Finalize();
 
-  // Setup simulation server
+  // Setup simulation server, this will call the post-update callbacks.
+  // It also calls pre-update and update callbacks if those are being used.
   fixture.Server()->Run(true, 1000, false);
 
   // Verify that the post update function was called 1000 times

@@ -43,7 +43,8 @@ inline namespace IGNITION_GAZEBO_VERSION_NAMESPACE {
 ///   const gazebo::EntityComponentManager &_ecm)
 ///   {
 ///     // Add expectations here
-///   }.Finalize(); // Important to initiallize the system
+///   }.Finalize();
+/// // Be sure to call finalize before running the server.
 ///
 /// // Run the server
 /// fixture.Server()->Run(true, 1000, false);
@@ -52,7 +53,7 @@ class TestFixture
 {
   /// \brief Constructor
   /// \param[in] _path Path to SDF file.
-  public: TestFixture(const std::string &_sdf);
+  public: TestFixture(const std::string &_path);
 
   /// \brief Constructor
   /// \param[in] _config Server config file
@@ -60,6 +61,7 @@ class TestFixture
 
   /// \brief Wrapper around a system's pre-update callback
   /// \param[in] _cb Function to be called every pre-update
+  /// The _entity and _sdf will correspond to the world entity.
   /// \return Reference to self.
   public: TestFixture &OnConfigure(std::function<void(
       const Entity &_entity,
@@ -86,6 +88,9 @@ class TestFixture
       const UpdateInfo &, const EntityComponentManager &)> _cb);
 
   /// \brief Finalize all the functions and add fixture to server.
+  /// Finalize must be called before running the server, otherwise none of the
+  /// `On*` functions will be called.
+  /// The `OnConfigure` callback is called immediately on finalize.
   public: TestFixture &Finalize();
 
   /// \brief Get pointer to underlying server.

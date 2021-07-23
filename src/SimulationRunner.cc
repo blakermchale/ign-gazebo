@@ -436,18 +436,16 @@ void SimulationRunner::PublishStats()
 /////////////////////////////////////////////////
 void SimulationRunner::AddSystemToRunner(SystemInternal _system)
 {
-  this->systems.push_back(SystemInternal(_system));
+  this->systems.push_back(_system);
 
-  const auto &system = this->systems.back();
+  if (_system.preupdate)
+    this->systemsPreupdate.push_back(_system.preupdate);
 
-  if (system.preupdate)
-    this->systemsPreupdate.push_back(system.preupdate);
+  if (_system.update)
+    this->systemsUpdate.push_back(_system.update);
 
-  if (system.update)
-    this->systemsUpdate.push_back(system.update);
-
-  if (system.postupdate)
-    this->systemsPostupdate.push_back(system.postupdate);
+  if (_system.postupdate)
+    this->systemsPostupdate.push_back(_system.postupdate);
 }
 
 /////////////////////////////////////////////////
@@ -818,58 +816,46 @@ void SimulationRunner::Step(const UpdateInfo &_info)
 
 //////////////////////////////////////////////////
 void SimulationRunner::AddSystem(
-      const SystemPluginPtr& _system,
+      const SystemPluginPtr &_system,
       std::optional<Entity> _entity,
       std::optional<sdf::ElementPtr> _sdf)
 {
-  auto systemConfig = _system->QueryInterface<ISystemConfigure>();
-  if (systemConfig != nullptr)
-  {
-    auto entity = (_entity.has_value()) ?
-      _entity.value()
-      :this->entityCompMgr.EntityByComponents(components::World());
-
-    auto sdf = (_sdf.has_value()) ?
-      _sdf.value()
-      :this->sdfWorld->Element();
-
-    systemConfig->Configure(
-        entity, sdf,
-        this->entityCompMgr,
-        this->eventMgr);
-  }
-  std::lock_guard<std::mutex> lock(this->pendingSystemsMutex);
-  this->pendingSystems.push_back(SystemInternal(_system));
+  this->AddSystemImpl(SystemInternal(_system), _entity, _sdf);
 }
 
 //////////////////////////////////////////////////
 void SimulationRunner::AddSystem(
-      System * _system,
+      System *_system,
       std::optional<Entity> _entity,
       std::optional<sdf::ElementPtr> _sdf)
 {
-  auto systemConfig = dynamic_cast<ISystemConfigure*>(_system);
-  if (systemConfig != nullptr)
+  this->AddSystemImpl(SystemInternal(_system), _entity, _sdf);
+}
+
+//////////////////////////////////////////////////
+void SimulationRunner::AddSystemImpl(
+      SystemInternal _system,
+      std::optional<Entity> _entity,
+      std::optional<sdf::ElementPtr> _sdf)
+{
+  // Call configure
+  if (_system.configure)
   {
-    auto entity = (_entity.has_value()) ?
-      _entity.value()
-      :this->entityCompMgr.EntityByComponents(components::World());
+    // Default to world entity and SDF
+    auto entity = _entity.has_value() ? _entity.value()
+        : worldEntity(this->entityCompMgr);
+    auto sdf = _sdf.has_value() ? _sdf.value() : this->sdfWorld->Element();
 
-    auto sdf = (_sdf.has_value()) ?
-      _sdf.value()
-      :this->sdfWorld->Element();
-
-    systemConfig->Configure(
+    _system.configure->Configure(
         entity, sdf,
         this->entityCompMgr,
         this->eventMgr);
   }
+
+  // Update callbacks will be handled later, add to queue
   std::lock_guard<std::mutex> lock(this->pendingSystemsMutex);
-  this->pendingSystems.push_back(SystemInternal(_system));
+  this->pendingSystems.push_back(_system);
 }
-
-//////////////////////////////////////////////////
-
 
 //////////////////////////////////////////////////
 void SimulationRunner::LoadPlugin(const Entity _entity,

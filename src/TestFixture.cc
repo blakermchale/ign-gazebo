@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Open Source Robotics Foundation
+ * Copyright (C) 2021 Open Source Robotics Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,11 +121,11 @@ void HelperSystem::PostUpdate(const UpdateInfo &_info,
 }
 
 //////////////////////////////////////////////////
-TestFixture::TestFixture(const std::string &_sdf)
+TestFixture::TestFixture(const std::string &_path)
   : dataPtr(utils::MakeUniqueImpl<Implementation>())
 {
   ServerConfig config;
-  config.SetSdfFile(_sdf);
+  config.SetSdfFile(_path);
   this->dataPtr->Init(config);
 }
 
