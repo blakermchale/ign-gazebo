@@ -43,7 +43,7 @@ inline namespace IGNITION_GAZEBO_VERSION_NAMESPACE {
 ///   const gazebo::EntityComponentManager &_ecm)
 ///   {
 ///     // Add expectations here
-///   }
+///   }.Finalize(); // Important to initiallize the system
 ///
 /// // Run the server
 /// fixture.Server()->Run(true, 1000, false);
@@ -57,6 +57,15 @@ class TestFixture
   /// \brief Constructor
   /// \param[in] _config Server config file
   public: TestFixture(const ServerConfig &_config);
+
+  /// \brief Wrapper around a system's pre-update callback
+  /// \param[in] _cb Function to be called every pre-update
+  /// \return Reference to self.
+  public: TestFixture &OnConfigure(std::function<void(
+      const Entity &_entity,
+      const std::shared_ptr<const sdf::Element> &_sdf,
+      EntityComponentManager &_ecm,
+      EventManager &_eventMgr)> _cb);
 
   /// \brief Wrapper around a system's pre-update callback
   /// \param[in] _cb Function to be called every pre-update
@@ -75,6 +84,9 @@ class TestFixture
   /// \return Reference to self.
   public: TestFixture &OnPostUpdate(std::function<void(
       const UpdateInfo &, const EntityComponentManager &)> _cb);
+
+  /// \brief Finalize all the functions and add fixture to server.
+  public: TestFixture &Finalize();
 
   /// \brief Get pointer to underlying server.
   public: std::shared_ptr<gazebo::Server> Server() const;
