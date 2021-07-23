@@ -35,9 +35,7 @@ TEST(ExampleTests, Gravity)
   // use to inspect the running simulation.
   ignition::gazebo::TestFixture fixture("../gravity.sdf");
 
-  // This callback is called every simulation iteration
   int iterations{0};
-
   ignition::gazebo::Entity modelEntity;
   ignition::math::Vector3d gravity;
 
@@ -53,8 +51,8 @@ TEST(ExampleTests, Gravity)
       ignition::gazebo::World world(_worldEntity);
       gravity = world.Gravity(_ecm).value();
 
-      // Get sphere entity
-      modelEntity = world.ModelByName(_ecm, "sphere");
+      // Get falling entity
+      modelEntity = world.ModelByName(_ecm, "falling");
       EXPECT_NE(ignition::gazebo::kNullEntity, modelEntity);
     }).
   // Use post-update callback to get values at the end of every iteration

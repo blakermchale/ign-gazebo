@@ -1,12 +1,12 @@
 <?xml version="1.0" ?>
 <sdf version="1.6">
-  <world name="gravity">
+  <world name="test_world">
     <plugin
       filename="ignition-gazebo-physics-system"
       name="ignition::gazebo::systems::Physics">
     </plugin>
 
-    <model name="falling">
+    <model name="commanded">
       <link name="link">
         <inertial>
           <inertia>
@@ -17,6 +17,10 @@
           <mass>1.0</mass>
         </inertial>
       </link>
+      <plugin
+        filename="ignition-gazebo-velocity-control-system"
+        name="ignition::gazebo::systems::VelocityControl">
+      </plugin>
     </model>
   </world>
 </sdf>

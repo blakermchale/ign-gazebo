@@ -33,6 +33,9 @@ class ignition::gazebo::TestFixture::Implementation
 
   /// \brief Pointer to underlying Helper interface
   public: HelperSystem *helperSystem{nullptr};
+
+  /// \brief Flag to make sure Finalize is only called once
+  public: bool finalized{false};
 };
 
 using namespace ignition;
@@ -146,8 +149,17 @@ void TestFixture::Implementation::Init(const ServerConfig &_config)
 //////////////////////////////////////////////////
 TestFixture &TestFixture::Finalize()
 {
+  if (this->dataPtr->finalized)
+  {
+    ignwarn << "Fixture has already been finalized, this only needs to be done"
+            << " once." << std::endl;
+    return *this;
+  }
+
   auto systemPtr = dynamic_cast<System *>(this->dataPtr->helperSystem);
   this->dataPtr->server->AddSystem(systemPtr);
+
+  this->dataPtr->finalized = true;
   return *this;
 }
 
