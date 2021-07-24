@@ -2016,6 +2016,8 @@ void IgnRenderer::Initialize()
 
   auto root = scene->RootVisual();
 
+  scene->SetCameraPassCountPerGpuFlush(6u);
+
   // Camera
   this->dataPtr->camera = scene->CreateCamera();
   root->AddChild(this->dataPtr->camera);
