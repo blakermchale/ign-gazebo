@@ -299,10 +299,9 @@ void OdometryPublisherPrivate::UpdateOdometry(
     while (currentPitch > lastPitch + IGN_PI) currentPitch -= 2 * IGN_PI;
     const float pitchDiff = currentPitch - lastPitch;
 
-    math::Quaternion quat(currentRoll, currentPitch, currentYaw);
     double linearDisplacementZ = pose.Pos().Z() - this->lastUpdatePose.Pos().Z();
     math::Vector3 linearDisplacement(linearDisplacementX, linearDisplacementY, linearDisplacementZ);
-    math::Vector3 linearVelocity = quat.RotateVector(linearDisplacement) / dt.count();
+    math::Vector3 linearVelocity = pose.Rot().RotateVector(linearDisplacement) / dt.count();
     std::get<0>(this->linearMean).Push(linearVelocity.X());
     std::get<1>(this->linearMean).Push(linearVelocity.Y());
     std::get<2>(this->linearMean).Push(linearVelocity.Z());
