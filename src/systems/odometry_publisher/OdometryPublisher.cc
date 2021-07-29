@@ -23,6 +23,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <tuple>
 
 #include <ignition/common/Profiler.hh>
 #include <ignition/math/Helpers.hh>
@@ -76,10 +77,12 @@ class ignition::gazebo::systems::OdometryPublisherPrivate
   public: transport::Node::Publisher odomPub;
 
   /// \brief Rolling mean accumulators for the linear velocity
-  public: std::tuple<math::RollingMean, math::RollingMean, math::RollingMean> linearMean;
+  public: std::tuple<math::RollingMean, math::RollingMean, math::RollingMean>
+    linearMean;
 
   /// \brief Rolling mean accumulators for the angular velocity
-  public: std::tuple<math::RollingMean, math::RollingMean, math::RollingMean> angularMean;
+  public: std::tuple<math::RollingMean, math::RollingMean, math::RollingMean>
+    angularMean;
 
   /// \brief Initialized flag.
   public: bool initialized{false};
@@ -123,8 +126,8 @@ void OdometryPublisher::Configure(const Entity &_entity,
 
   if (!this->dataPtr->model.Valid(_ecm))
   {
-    ignerr << "OdometryPublisher system plugin should be attached to a model entity. "
-           << "Failed to initialize." << std::endl;
+    ignerr << "OdometryPublisher system plugin should be attached to a model"
+           << " entity. Failed to initialize." << std::endl;
     return;
   }
 
@@ -160,10 +163,11 @@ void OdometryPublisher::Configure(const Entity &_entity,
   else
   {
     this->dataPtr->dimensions = _sdf->Get<int>("dimensions");
-    if (this->dataPtr->dimensions != 2 and this->dataPtr->dimensions != 3)
+    if (this->dataPtr->dimensions != 2 && this->dataPtr->dimensions != 3)
     {
-      ignerr << "OdometryPublisher system plugin <dimensions> must be 2D or 3D not "
-             << this->dataPtr->dimensions << "D. Failed to initialize." << std::endl;
+      ignerr << "OdometryPublisher system plugin <dimensions> must be 2D or 3D "
+             << "not " << this->dataPtr->dimensions
+             << "D. Failed to initialize." << std::endl;
       return;
     }
   }
@@ -281,8 +285,10 @@ void OdometryPublisherPrivate::UpdateOdometry(
       - sinf(currentYaw) * linearDisplacementX) / dt.count();
     std::get<0>(this->linearMean).Push(linearVelocityX);
     std::get<1>(this->linearMean).Push(linearVelocityY);
-    msg.mutable_twist()->mutable_linear()->set_x(std::get<0>(this->linearMean).Mean());
-    msg.mutable_twist()->mutable_linear()->set_y(std::get<1>(this->linearMean).Mean());
+    msg.mutable_twist()->mutable_linear()->set_x(
+      std::get<0>(this->linearMean).Mean());
+    msg.mutable_twist()->mutable_linear()->set_y(
+      std::get<1>(this->linearMean).Mean());
   }
   // Get velocities and roll/pitch rates assuming 3D
   else if (this->dimensions == 3)
@@ -299,24 +305,33 @@ void OdometryPublisherPrivate::UpdateOdometry(
     while (currentPitch > lastPitch + IGN_PI) currentPitch -= 2 * IGN_PI;
     const float pitchDiff = currentPitch - lastPitch;
 
-    double linearDisplacementZ = pose.Pos().Z() - this->lastUpdatePose.Pos().Z();
-    math::Vector3 linearDisplacement(linearDisplacementX, linearDisplacementY, linearDisplacementZ);
-    math::Vector3 linearVelocity = pose.Rot().RotateVector(linearDisplacement) / dt.count();
+    double linearDisplacementZ =
+      pose.Pos().Z() - this->lastUpdatePose.Pos().Z();
+    math::Vector3 linearDisplacement(linearDisplacementX, linearDisplacementY,
+      linearDisplacementZ);
+    math::Vector3 linearVelocity =
+      pose.Rot().RotateVectorReverse(linearDisplacement) / dt.count();
     std::get<0>(this->linearMean).Push(linearVelocity.X());
     std::get<1>(this->linearMean).Push(linearVelocity.Y());
     std::get<2>(this->linearMean).Push(linearVelocity.Z());
     std::get<0>(this->angularMean).Push(rollDiff / dt.count());
     std::get<1>(this->angularMean).Push(pitchDiff / dt.count());
-    msg.mutable_twist()->mutable_linear()->set_x(std::get<0>(this->linearMean).Mean());
-    msg.mutable_twist()->mutable_linear()->set_y(std::get<1>(this->linearMean).Mean());
-    msg.mutable_twist()->mutable_linear()->set_z(std::get<2>(this->linearMean).Mean());
-    msg.mutable_twist()->mutable_angular()->set_x(std::get<0>(this->angularMean).Mean());
-    msg.mutable_twist()->mutable_angular()->set_y(std::get<1>(this->angularMean).Mean());
+    msg.mutable_twist()->mutable_linear()->set_x(
+      std::get<0>(this->linearMean).Mean());
+    msg.mutable_twist()->mutable_linear()->set_y(
+      std::get<1>(this->linearMean).Mean());
+    msg.mutable_twist()->mutable_linear()->set_z(
+      std::get<2>(this->linearMean).Mean());
+    msg.mutable_twist()->mutable_angular()->set_x(
+      std::get<0>(this->angularMean).Mean());
+    msg.mutable_twist()->mutable_angular()->set_y(
+      std::get<1>(this->angularMean).Mean());
   }
 
   // Set yaw rate
   std::get<2>(this->angularMean).Push(yawDiff / dt.count());
-  msg.mutable_twist()->mutable_angular()->set_z(std::get<2>(this->angularMean).Mean());
+  msg.mutable_twist()->mutable_angular()->set_z(
+    std::get<2>(this->angularMean).Mean());
 
   // Set the time stamp in the header.
   msg.mutable_header()->mutable_stamp()->CopyFrom(
